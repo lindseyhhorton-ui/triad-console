@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Shield, Feather, Flame } from 'lucide-react';
+import SolarDashboard from './SolarDashboard';
 import './App.css';
 
 function App() {
@@ -78,6 +79,8 @@ function App() {
           </button>
         </div>
       </div>
+
+      <SolarDashboard />
     </div>
   );
 }
