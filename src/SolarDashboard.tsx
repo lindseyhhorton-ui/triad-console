@@ -80,6 +80,8 @@ function PanelHeader({
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function SolarDashboard() {
+  const solarRadioEmbedUrl = import.meta.env.VITE_SOLAR_RADIO_URL?.trim() ?? '';
+
   // fetch states
   const [plasma, setPlasma] = useState<FetchState<PlasmaRow>>({ data: null, error: null, loading: false });
   const [mag,    setMag]    = useState<FetchState<MagRow>>   ({ data: null, error: null, loading: false });
@@ -390,16 +392,28 @@ export default function SolarDashboard() {
               <span className="solar-dot dot-ok pulse" title="Live stream" />
             </div>
           </div>
-          <div className="solar-embed-frame">
-            <iframe
-              src="https://www.youtube.com/embed/bnBiwoppxio?autoplay=1&mute=1"
-              title="Listen to the Sun | Live Solar Radio Signals"
-              className="solar-embed"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              referrerPolicy="strict-origin-when-cross-origin"
-              allowFullScreen
-            />
-          </div>
+          {solarRadioEmbedUrl ? (
+            <div className="solar-embed-frame">
+              <iframe
+                src={solarRadioEmbedUrl}
+                title="Listen to the Sun | Live Solar Radio Signals"
+                className="solar-embed"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen
+              />
+            </div>
+          ) : (
+            <div className="solar-embed-empty">
+              <div className="solar-embed-empty-content">
+                <strong>Solar Radio stream not configured.</strong>
+                <span>Set VITE_SOLAR_RADIO_URL to a public embeddable YouTube URL to show the live panel here.</span>
+              </div>
+              <a href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer" className="solar-embed-link">
+                Open YouTube
+              </a>
+            </div>
+          )}
           <p className="solar-hint solar-hint-top-gap">
             Live radio emissions from the Sun — NASA/NOAA solar radio burst monitoring.
           </p>
