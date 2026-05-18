@@ -38,14 +38,6 @@ async function fetchNoaa<T>(url: string, transform: (rows: string[][]) => T): Pr
   return transform(json.slice(1));
 }
 
-function kpColor(kp: number): string {
-  if (kp >= 8) return '#f87171';
-  if (kp >= 6) return '#fb923c';
-  if (kp >= 4) return '#fbbf24';
-  if (kp >= 2) return '#4ade80';
-  return '#38bdf8';
-}
-
 function kpLabel(kp: number): string {
   if (kp >= 9) return 'G5 EXTREME';
   if (kp >= 8) return 'G4 SEVERE';
@@ -169,8 +161,7 @@ export default function SolarDashboard() {
 
   // ── Kp gauge ─────────────────────────────────────────────────────────────
   const kpVal = parseFloat(kp.data?.kp ?? '0');
-  const kpPct = Math.min((kpVal / 9) * 100, 100);
-  const kpC   = kpColor(kpVal);
+  const kpLevel = Math.max(0, Math.min(9, Math.round(kpVal)));
 
   // ── Clock ────────────────────────────────────────────────────────────────
   const [clock, setClock] = useState(now());
@@ -296,17 +287,17 @@ export default function SolarDashboard() {
           )}
           {kp.data && (
             <div className="solar-kp-display">
-              <div className="solar-kp-number" style={{ color: kpC }}>{kpVal.toFixed(1)}</div>
-              <div className="solar-kp-label" style={{ color: kpC }}>{kpLabel(kpVal)}</div>
+              <div className={`solar-kp-number solar-kp-number-${kpLevel}`}>{kpVal.toFixed(1)}</div>
+              <div className={`solar-kp-label solar-kp-label-${kpLevel}`}>{kpLabel(kpVal)}</div>
               <div className="solar-kp-bar-bg">
-                <div className="solar-kp-bar-fill" style={{ width: `${kpPct}%`, background: kpC }} />
+                <div className={`solar-kp-bar-fill solar-kp-bar-fill-${kpLevel}`} />
               </div>
               <div className="solar-kp-scale">
                 {[0,1,2,3,4,5,6,7,8,9].map(n => (
-                  <span key={n} style={{ color: kpColor(n), opacity: n <= Math.floor(kpVal) ? 1 : 0.25 }}>{n}</span>
+                  <span key={n} className={`solar-kp-scale-step solar-kp-scale-step-${n} ${n <= Math.floor(kpVal) ? 'solar-kp-scale-step-on' : 'solar-kp-scale-step-off'}`}>{n}</span>
                 ))}
               </div>
-              <div className="solar-metric full" style={{ marginTop: '8px' }}>
+              <div className="solar-metric full solar-metric-top-gap">
                 <span className="solar-label">Updated</span>
                 <span className="solar-value-small">{kp.data.time} UTC</span>
               </div>
@@ -326,10 +317,10 @@ export default function SolarDashboard() {
             error={null}
             onRefresh={() => setMagEntries([])}
           />
-          <p className="solar-hint" style={{ marginBottom: '8px' }}>
+          <p className="solar-hint solar-hint-tight">
             Format: <code>station, nT value</code>
           </p>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div className="solar-inline-row">
             <input
               className="solar-input"
               value={magInput}
@@ -340,7 +331,7 @@ export default function SolarDashboard() {
             <button className="solar-btn" onClick={addMagEntry}>Add</button>
           </div>
           {magEntries.length > 0 && (
-            <table className="solar-table" style={{ marginTop: '10px' }}>
+            <table className="solar-table solar-table-top-gap-sm">
               <thead><tr><th>Station</th><th>nT</th></tr></thead>
               <tbody>
                 {magEntries.map((e, i) => (
@@ -371,18 +362,18 @@ export default function SolarDashboard() {
             placeholder="Subjective: grass glow, humming, dream intensity, compass deviation…"
             rows={3}
           />
-          <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+          <div className="solar-action-row">
             <button className="solar-btn" onClick={appendLog}>Append to Log</button>
             <button className="solar-btn solar-btn-ghost" onClick={downloadCSV} disabled={logEntries.length === 0}>
               <FileDown size={14} /> Download CSV
             </button>
           </div>
           {logEntries.length > 0 && (
-            <table className="solar-table" style={{ marginTop: '12px' }}>
+            <table className="solar-table solar-table-top-gap-md">
               <thead><tr><th>Time</th><th>Observation</th></tr></thead>
               <tbody>
                 {logEntries.map((e, i) => (
-                  <tr key={i}><td style={{ whiteSpace: 'nowrap' }}>{e.time}</td><td>{e.subjective}</td></tr>
+                  <tr key={i}><td className="solar-nowrap">{e.time}</td><td>{e.subjective}</td></tr>
                 ))}
               </tbody>
             </table>
@@ -399,17 +390,17 @@ export default function SolarDashboard() {
               <span className="solar-dot dot-ok pulse" title="Live stream" />
             </div>
           </div>
-          <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: '8px', marginTop: '10px' }}>
+          <div className="solar-embed-frame">
             <iframe
               src="https://www.youtube.com/embed/bnBiwoppxio?autoplay=1&mute=1"
               title="Listen to the Sun | Live Solar Radio Signals"
-              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0 }}
+              className="solar-embed"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               referrerPolicy="strict-origin-when-cross-origin"
               allowFullScreen
             />
           </div>
-          <p className="solar-hint" style={{ marginTop: '8px' }}>
+          <p className="solar-hint solar-hint-top-gap">
             Live radio emissions from the Sun — NASA/NOAA solar radio burst monitoring.
           </p>
         </div>
