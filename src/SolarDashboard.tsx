@@ -390,6 +390,31 @@ export default function SolarDashboard() {
         </div>
 
         {/* ── Quick Links ──────────────────────────────────────────────────── */}
+        {/* ── Solar Radio Live Stream ──────────────────────────────────────── */}
+        <div className="solar-panel solar-panel-wide">
+          <div className="solar-panel-header">
+            <div className="solar-panel-title">
+              <Radio size={16} />
+              <span>Solar Radio — Live Signal Feed</span>
+              <span className="solar-dot dot-ok pulse" title="Live stream" />
+            </div>
+          </div>
+          <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: '8px', marginTop: '10px' }}>
+            <iframe
+              src="https://www.youtube.com/embed/bnBiwoppxio?autoplay=1&mute=1"
+              title="Listen to the Sun | Live Solar Radio Signals"
+              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0 }}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allowFullScreen
+            />
+          </div>
+          <p className="solar-hint" style={{ marginTop: '8px' }}>
+            Live radio emissions from the Sun — NASA/NOAA solar radio burst monitoring.
+          </p>
+        </div>
+
+        {/* ── Quick Links ──────────────────────────────────────────────────── */}
         <div className="solar-panel solar-panel-links">
           <div className="solar-panel-header">
             <div className="solar-panel-title">
