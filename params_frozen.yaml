@@ -1,0 +1,25 @@
+# Frozen telemetry parameters for local calibration and dashboard logging
+version: 1
+profile: sovereign-telemetry-default
+updated_at: "2026-05-22T00:00:00Z"
+
+sampling:
+  interval_seconds: 30
+  batch_window_seconds: 180
+
+thresholds:
+  kp_alert: 5.0
+  bz_alert_nt: -5.0
+  drift_alert_ratio: 1.2
+
+telemetry_fields:
+  - node
+  - value
+  - unit
+  - status
+  - note
+
+allowed_status:
+  - nominal
+  - monitor
+  - alert

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Wind, Magnet, Activity, Radio, FileDown, ExternalLink, RefreshCw, AlertTriangle } from 'lucide-react';
+import TelemetryPanel from './components/TelemetryPanel';
 
 // ── NOAA SWPC CORS-enabled endpoints ──────────────────────────────────────────
 const ENDPOINTS = {
@@ -33,9 +34,12 @@ interface MagEntry {
 async function fetchNoaa<T>(url: string, transform: (rows: string[][]) => T): Promise<T> {
   const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const json: string[][] = await res.json();
+  const json = await res.json();
+  if (!Array.isArray(json)) {
+    throw new Error('Unexpected NOAA payload format');
+  }
   // first row is headers – skip it
-  return transform(json.slice(1));
+  return transform((json as string[][]).slice(1));
 }
 
 function kpLabel(kp: number): string {
@@ -120,12 +124,34 @@ export default function SolarDashboard() {
 
   const fetchKp = useCallback(() => {
     setKp(s => ({ ...s, loading: true, error: null }));
-    fetchNoaa<KpRow>(ENDPOINTS.kp, rows => {
-      const last = rows[rows.length - 1];
-      return { time: last[0], kp: last[1] };
-    })
+    fetch(ENDPOINTS.kp, { cache: 'no-store' })
+      .then(async res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+
+        if (!Array.isArray(json) || json.length === 0) {
+          throw new Error('No Kp data returned');
+        }
+
+        const last = json[json.length - 1];
+
+        // NOAA has used both CSV-like rows and object rows for this endpoint.
+        if (Array.isArray(last)) {
+          return { time: String(last[0] ?? ''), kp: String(last[1] ?? '') };
+        }
+
+        if (typeof last === 'object' && last !== null) {
+          const row = last as { time_tag?: unknown; Kp?: unknown; kp?: unknown };
+          return {
+            time: String(row.time_tag ?? ''),
+            kp: String(row.Kp ?? row.kp ?? ''),
+          };
+        }
+
+        throw new Error('Unexpected Kp row format');
+      })
       .then(data => setKp({ data, error: null, loading: false }))
-      .catch(e  => setKp({ data: null, error: String(e), loading: false }));
+      .catch(e => setKp({ data: null, error: String(e), loading: false }));
   }, []);
 
   // auto-fetch on mount + every 3 min
@@ -162,7 +188,8 @@ export default function SolarDashboard() {
   };
 
   // ── Kp gauge ─────────────────────────────────────────────────────────────
-  const kpVal = parseFloat(kp.data?.kp ?? '0');
+  const parsedKp = Number.parseFloat(kp.data?.kp ?? '0');
+  const kpVal = Number.isFinite(parsedKp) ? parsedKp : 0;
   const kpLevel = Math.max(0, Math.min(9, Math.round(kpVal)));
 
   // ── Clock ────────────────────────────────────────────────────────────────
@@ -301,7 +328,7 @@ export default function SolarDashboard() {
               </div>
               <div className="solar-metric full solar-metric-top-gap">
                 <span className="solar-label">Updated</span>
-                <span className="solar-value-small">{kp.data.time} UTC</span>
+                <span className="solar-value-small">{kp.data.time ? `${kp.data.time} UTC` : 'N/A'}</span>
               </div>
             </div>
           )}
@@ -444,6 +471,14 @@ export default function SolarDashboard() {
             ))}
           </ul>
         </div>
+
+        <TelemetryPanel
+          onLogSubmit={(log) => {
+            const note = log.note ? ` - ${log.note}` : '';
+            const message = `${log.node}: ${log.value} ${log.unit} [${log.status}]${note}`;
+            setLogEntries(prev => [...prev, { time: now(), subjective: message }]);
+          }}
+        />
       </div>
     </div>
   );
