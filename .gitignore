@@ -1,2 +1,41 @@
+# ── Spoonfed Grace LLC — Clean Signal Protocol ──────────────────────────────
+# GitHub stays "Sovereign Code" only. No Fossil Grid bloat.
+
+# Node / Package managers
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Environment & secrets (NEVER commit EIN / API keys)
+.env
+.env.local
+.env.*.local
+*.secret
+*.key
+
+# OS clutter
+.DS_Store
+Thumbs.db
+desktop.ini
+*.lnk
+
+# Build outputs
 dist/
+build/
+.cache/
+.parcel-cache/
+
+# VS Code workspace (optional — remove # to track settings)
+# .vscode/
+
+# Logs
+logs/
+*.log
+
+# Temp / swap files
+*.tmp
+*.swp
+*~

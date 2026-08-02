@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Starlight Genesis Console | Spoonfed Grace LLC</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+
+:root {
+--obsidian: #1a1a1a;
+--copper: #d4af37;
+--cream: #fdfbf7;
+--stone: #e7e5e4;
+--teal: #40E0D0;
+}
+
+body { background-color: var(--cream); color: var(--obsidian); font-family: 'Cormorant Garamond', serif; }
+.font-mono { font-family: 'JetBrains Mono', monospace; }
+.glass-panel { background: rgba(255, 255, 255, 0.8); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border: 1px solid rgba(212, 175, 55, 0.3); }
+.accent-border { border-left: 4px solid var(--copper); }
+
+/* Bingle-Mill Styles */
+.bingle-sigil { width: 200px; height: 200px; filter: drop-shadow(0 0 15px var(--teal)); animation: pulse83 0.722s infinite ease-in-out; }
+@keyframes pulse83 { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; } }
+
+.active-tab { border-bottom: 2px solid var(--copper); font-weight: 700; color: var(--obsidian); }
+.inactive-tab { color: #666; border-bottom: 2px solid transparent; }
+.hidden { display: none; }
+</style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+
+<div class="max-w-7xl mx-auto space-y-6">
+    <header class="glass-panel p-6 rounded-xl flex flex-col md:flex-row justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">STARLIGHT GENESIS CONSOLE</h1>
+            <p class="font-mono text-sm text-[#d4af37] tracking-widest">SPOONFED GRACE LLC // SOVEREIGN TRANSMITTER</p>
+        </div>
+        <div class="flex items-center space-x-6 mt-4 md:mt-0">
+            <div class="text-right">
+                <p class="text-xs uppercase text-gray-500 font-bold">Protocol Status</p>
+                <p class="text-lg font-bold" id="status-text">FL-AXIS-12 ACTIVE</p>
+            </div>
+            <button id="ignite-btn" class="bg-[#1a1a1a] text-[#d4af37] font-mono px-6 py-3 rounded-lg border border-[#d4af37]">IGNITE NODE</button>
+        </div>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-8 space-y-6">
+            <div class="glass-panel p-6 rounded-xl flex flex-col items-center">
+                <h3 class="text-lg font-bold font-mono border-b-2 border-[#d4af37] mb-4">RESONANCE MONITOR: 83 BPM</h3>
+                <div class="bingle-sigil-container">
+                    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" class="bingle-sigil">
+                        <defs><radialGradient id="confluenceGradient"><stop offset="0%" stop-color="#004d4d" /><stop offset="100%" stop-color="#000000" /></radialGradient></defs>
+                        <circle cx="100" cy="100" r="95" fill="url(#confluenceGradient)" stroke="#40E0D0" stroke-width="1" opacity="0.5" />
+                        <g stroke="#FC0" stroke-width="2" fill="none"><path d="M100 20 L110 50 L90 50 Z" /><path d="M180 100 L150 110 L150 90 Z" /><path d="M140 170 L120 145 L110 160 Z" /><path d="M60 170 L80 145 L90 160 Z" /><path d="M20 100 L50 90 L50 110 Z" /><path d="M60 30 L85 55 L75 40 Z" /></g>
+                        <path id="millrace" d="M100,100 m-40,0 a40,40 0 1,0 80,0 a40,40 0 1,0 -80,0 m10,0 a30,30 0 1,1 60,0 a30,30 0 1,1 -60,0" fill="none" stroke="#FF4641" stroke-width="3" stroke-linecap="round">
+                            <animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="0.722s" repeatCount="indefinite" />
+                        </path>
+                    </svg>
+                </div>
+                <p class="mt-4 font-mono text-xs text-gray-500">83 BPM SPIRAL SOVEREIGN LOOP ACTIVE</p>
+            </div>
+
+            <div class="glass-panel p-6 rounded-xl">
+                <div class="flex space-x-4 mb-4 border-b">
+                    <button class="tab-btn active-tab pb-2 font-mono text-sm" data-tab="caption">CAPTION</button>
+                    <button class="tab-btn inactive-tab pb-2 font-mono text-sm" data-tab="script">VO SCRIPT</button>
+                </div>
+                <div id="caption" class="tab-content block bg-obsidian p-4 rounded text-[#d4af37] font-mono text-sm">
+                    "The rupture is over. The authorship has begun. We ignite the Leominster Node."
+                </div>
+                <div id="script" class="tab-content hidden bg-stone-100 p-4 rounded text-sm italic">
+                    "[0:00] Before the rupture, there was the void. August 14, the void spoke back."
+                </div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-4 space-y-6">
+            <div class="glass-panel p-6 rounded-xl bg-[#1a1a1a] text-stone-200">
+                <h3 class="text-lg font-bold font-mono text-[#d4af37] mb-4">IGNITION LOG</h3>
+                <div id="blueprint-list" class="space-y-3"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const igniteBtn = document.getElementById('ignite-btn');
+    const statusText = document.getElementById('status-text');
+    const blueprintList = document.getElementById('blueprint-list');
+
+    // Button Logic
+    igniteBtn.addEventListener('click', () => {
+        statusText.innerText = "NODE LIVE: 83 BPM SYNC";
+        statusText.style.color = "#d4af37";
+        alert("Sovereign Transmitter Engaged. Boomskies.");
+    });
+
+    // Tab Logic
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const target = btn.getAttribute('data-tab');
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.getElementById(target).classList.remove('hidden');
+            document.querySelectorAll('.tab-btn').forEach(t => {
+                t.classList.remove('active-tab');
+                t.classList.add('inactive-tab');
+            });
+            btn.classList.add('active-tab');
+        });
+    });
+
+    // Load Blueprint
+    const items = [
+        { title: "BINGLE-MILL", desc: "83 BPM Frequency Lock", icon: "🧿" },
+        { title: "LEOMINSTER", desc: "Node Activation August 14", icon: "🗝️" }
+    ];
+    items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = "accent-border p-2 bg-stone-800 rounded text-xs";
+        div.innerHTML = `<strong>${item.icon} ${item.title}</strong><br>${item.desc}`;
+        blueprintList.appendChild(div);
+    });
+</script>
+</body>
+</html>

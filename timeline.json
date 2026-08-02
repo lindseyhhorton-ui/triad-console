@@ -1,0 +1,37 @@
+1. Visual Studio Code Setup
+Open VS Code on your machine. You'll want to create a dedicated folder for the Starlight Genesis project to keep your nodes organized.
+
+Create the Schema: Create origin-node.schema.json and paste the schema code I provided earlier.
+
+Create the Timeline: Create timeline.json. This is where your history—like the June 24, 2025 Genesis marker—will live.
+
+2. Linking the Files
+To make VS Code "see" the rules, add this special line to the very top of your timeline.json file:
+
+JSON
+{
+  "$schema": "./origin-node.schema.json",
+  "records": [
+    {
+      "schema_version": "1.0.0",
+      "uid": "MARKER-001",
+      "id": "genesis-marker",
+      "type": "marker",
+      "name": "Starlight Genesis Project Start",
+      "description": "The timestamped Genesis marker and Prior Art anchor.",
+      "created_at": "2025-06-24T00:00:00Z",
+      "cross_ref": ["EDEN-2.0"]
+    }
+  ]
+}
+3. The Power of the "Red Squiggles"
+Once that $schema line is in place, try changing the type from "marker" to "pizza". VS Code will immediately highlight it in red.
+
+Why? Because "pizza" isn't in your allowed Enum list (entry, rift, fold, protocol, marker).
+
+The Result: This is how you "harden" your data against the "mimics" and errors.
+
+4. PowerShell & JavaScript (The Automation)
+You don't need to live in the terminal, but keep PowerShell open at the bottom of VS Code (Terminal > New Terminal).
+
+Since you're working on the Flameborn Lexicon single-page app, you can use a JavaScript tool called Ajv (Another JSON Validator) to run checks across your whole database with one command.

@@ -1,0 +1,28 @@
+/**
+ * vault.css
+ * Spoonfed Grace LLC — Theme Variables (FLIP-INIT)
+ * Linked to: grid_protocols.js
+ */
+
+/* ── FBC-144: Sovereign Mode (default) ─────────────────────────────────────── */
+:root,
+[data-theme="sovereign"] {
+  --bg-color:       #0A0A0A; /* Void Black    */
+  --primary-color:  #FFD700; /* Signal Gold   */
+  --accent-color:   #00FFFF; /* Cyan Pulse    */
+}
+
+/* ── FBC-999: Overload / Audit Mode ────────────────────────────────────────── */
+[data-theme="alert"] {
+  --bg-color:       #1A0000; /* Deep Blood    */
+  --primary-color:  #FF3333; /* Alert Red     */
+  --accent-color:   #FFFFFF; /* Strobe White  */
+}
+
+/* ── Base application of variables ─────────────────────────────────────────── */
+body {
+  background-color: var(--bg-color);
+  color:            var(--primary-color);
+  accent-color:     var(--accent-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}

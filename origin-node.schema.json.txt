@@ -1,0 +1,15 @@
+{
+  "$schema": "./origin-node.schema.json",
+  "records": [
+    {
+      "schema_version": "1.0.0",
+      "uid": "MARKER-001",
+      "id": "genesis-marker",
+      "type": "marker",
+      "name": "Starlight Genesis Project Start",
+      "description": "The timestamped Genesis marker and Prior Art anchor.",
+      "created_at": "2025-06-24T00:00:00Z",
+      "cross_ref": ["EDEN-2.0"]
+    }
+  ]
+}origin-node.schema.json
