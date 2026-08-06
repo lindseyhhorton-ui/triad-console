@@ -1,18 +1,26 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Wind, Magnet, Activity, Radio, FileDown, ExternalLink, RefreshCw, AlertTriangle } from 'lucide-react';
 import TelemetryPanel from './components/TelemetryPanel';
+import HeliospherePanel from './components/HeliospherePanel';
 
-// ── NOAA SWPC CORS-enabled endpoints ──────────────────────────────────────────
-const ENDPOINTS = {
-  plasma: 'https://services.swpc.noaa.gov/products/solar-wind/plasma-7-day.json',
-  mag:    'https://services.swpc.noaa.gov/products/solar-wind/mag-7-day.json',
-  kp:     'https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json',
-};
+// NOAA SWPC retired its browser-facing solar wind product paths, and its 404s carry no CORS
+// headers, so a direct fetch surfaces only "TypeError: Failed to fetch". All live telemetry now
+// comes from our own function, which reads the current NOAA feeds server-side.
+const SPACE_WEATHER_ENDPOINT = '/api/space-weather';
 
 // ── Types ────────────────────────────────────────────────────────────────────
-interface PlasmaRow { time: string; density: string; speed: string; temp: string }
-interface MagRow    { time: string; bx: string; by: string; bz: string; bt: string }
-interface KpRow     { time: string; kp: string }
+interface PlasmaRow { time: string; density: number; speed: number; temp: number; source: string }
+interface MagRow    { time: string; bx: number; by: number; bz: number; bt: number; source: string }
+interface KpRow     { time: string; kp: number }
+
+interface SpaceWeatherPayload {
+  plasma: PlasmaRow | null;
+  plasmaError: string | null;
+  mag: MagRow | null;
+  magError: string | null;
+  kp: KpRow | null;
+  kpError: string | null;
+}
 
 interface FetchState<T> {
   data: T | null;
@@ -31,15 +39,14 @@ interface MagEntry {
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-async function fetchNoaa<T>(url: string, transform: (rows: string[][]) => T): Promise<T> {
-  const res = await fetch(url, { cache: 'no-store' });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const json = await res.json();
-  if (!Array.isArray(json)) {
-    throw new Error('Unexpected NOAA payload format');
+async function fetchSpaceWeather(): Promise<SpaceWeatherPayload> {
+  const res = await fetch(SPACE_WEATHER_ENDPOINT, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`Live feed unavailable (HTTP ${res.status})`);
+  const json: unknown = await res.json();
+  if (typeof json !== 'object' || json === null) {
+    throw new Error('Unexpected response from live feed');
   }
-  // first row is headers – skip it
-  return transform((json as string[][]).slice(1));
+  return json as SpaceWeatherPayload;
 }
 
 function kpLabel(kp: number): string {
@@ -102,64 +109,33 @@ export default function SolarDashboard() {
   const now = () => new Date().toLocaleString('en-US', { hour12: false });
 
   // ── Fetchers ────────────────────────────────────────────────────────────
-  const fetchPlasma = useCallback(() => {
+  // One request feeds all three live panels; each panel still reports its own status so a
+  // single degraded NOAA feed does not blank out the others.
+  const refreshAll = useCallback(() => {
     setPlasma(s => ({ ...s, loading: true, error: null }));
-    fetchNoaa<PlasmaRow>(ENDPOINTS.plasma, rows => {
-      const last = rows[rows.length - 1];
-      return { time: last[0], density: last[1], speed: last[2], temp: last[3] };
-    })
-      .then(data => setPlasma({ data, error: null, loading: false }))
-      .catch(e  => setPlasma({ data: null, error: String(e), loading: false }));
-  }, []);
-
-  const fetchMag = useCallback(() => {
     setMag(s => ({ ...s, loading: true, error: null }));
-    fetchNoaa<MagRow>(ENDPOINTS.mag, rows => {
-      const last = rows[rows.length - 1];
-      return { time: last[0], bx: last[1], by: last[2], bz: last[3], bt: last[6] };
-    })
-      .then(data => setMag({ data, error: null, loading: false }))
-      .catch(e  => setMag({ data: null, error: String(e), loading: false }));
-  }, []);
-
-  const fetchKp = useCallback(() => {
     setKp(s => ({ ...s, loading: true, error: null }));
-    fetch(ENDPOINTS.kp, { cache: 'no-store' })
-      .then(async res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
 
-        if (!Array.isArray(json) || json.length === 0) {
-          throw new Error('No Kp data returned');
-        }
-
-        const last = json[json.length - 1];
-
-        // NOAA has used both CSV-like rows and object rows for this endpoint.
-        if (Array.isArray(last)) {
-          return { time: String(last[0] ?? ''), kp: String(last[1] ?? '') };
-        }
-
-        if (typeof last === 'object' && last !== null) {
-          const row = last as { time_tag?: unknown; Kp?: unknown; kp?: unknown };
-          return {
-            time: String(row.time_tag ?? ''),
-            kp: String(row.Kp ?? row.kp ?? ''),
-          };
-        }
-
-        throw new Error('Unexpected Kp row format');
+    fetchSpaceWeather()
+      .then(payload => {
+        setPlasma({ data: payload.plasma, error: payload.plasma ? null : (payload.plasmaError ?? 'No data'), loading: false });
+        setMag({ data: payload.mag, error: payload.mag ? null : (payload.magError ?? 'No data'), loading: false });
+        setKp({ data: payload.kp, error: payload.kp ? null : (payload.kpError ?? 'No data'), loading: false });
       })
-      .then(data => setKp({ data, error: null, loading: false }))
-      .catch(e => setKp({ data: null, error: String(e), loading: false }));
+      .catch((e: unknown) => {
+        const msg = e instanceof Error ? e.message : String(e);
+        setPlasma({ data: null, error: msg, loading: false });
+        setMag({ data: null, error: msg, loading: false });
+        setKp({ data: null, error: msg, loading: false });
+      });
   }, []);
 
   // auto-fetch on mount + every 3 min
   useEffect(() => {
-    fetchPlasma(); fetchMag(); fetchKp();
-    const id = setInterval(() => { fetchPlasma(); fetchMag(); fetchKp(); }, 3 * 60 * 1000);
+    refreshAll();
+    const id = setInterval(refreshAll, 3 * 60 * 1000);
     return () => clearInterval(id);
-  }, [fetchPlasma, fetchMag, fetchKp]);
+  }, [refreshAll]);
 
   // ── Local magnetometer ──────────────────────────────────────────────────
   const addMagEntry = () => {
@@ -188,7 +164,7 @@ export default function SolarDashboard() {
   };
 
   // ── Kp gauge ─────────────────────────────────────────────────────────────
-  const parsedKp = Number.parseFloat(kp.data?.kp ?? '0');
+  const parsedKp = kp.data?.kp ?? 0;
   const kpVal = Number.isFinite(parsedKp) ? parsedKp : 0;
   const kpLevel = Math.max(0, Math.min(9, Math.round(kpVal)));
 
@@ -223,7 +199,7 @@ export default function SolarDashboard() {
             title="Solar Wind (DSCOVR/ACE)"
             loading={plasma.loading}
             error={plasma.error}
-            onRefresh={fetchPlasma}
+            onRefresh={refreshAll}
           />
           {plasma.error && (
             <div className="solar-error">
@@ -234,19 +210,19 @@ export default function SolarDashboard() {
             <div className="solar-data-grid">
               <div className="solar-metric">
                 <span className="solar-label">Speed</span>
-                <span className="solar-value cyan">{parseFloat(plasma.data.speed).toFixed(0)} <small>km/s</small></span>
+                <span className="solar-value cyan">{plasma.data.speed.toFixed(0)} <small>km/s</small></span>
               </div>
               <div className="solar-metric">
                 <span className="solar-label">Density</span>
-                <span className="solar-value cyan">{parseFloat(plasma.data.density).toFixed(2)} <small>p/cm³</small></span>
+                <span className="solar-value cyan">{plasma.data.density.toFixed(2)} <small>p/cm³</small></span>
               </div>
               <div className="solar-metric">
                 <span className="solar-label">Temp</span>
-                <span className="solar-value cyan">{(parseFloat(plasma.data.temp) / 1e6).toFixed(2)} <small>MK</small></span>
+                <span className="solar-value cyan">{(plasma.data.temp / 1e6).toFixed(2)} <small>MK</small></span>
               </div>
               <div className="solar-metric full">
                 <span className="solar-label">Updated</span>
-                <span className="solar-value-small">{plasma.data.time} UTC</span>
+                <span className="solar-value-small">{plasma.data.time} UTC · {plasma.data.source}</span>
               </div>
             </div>
           )}
@@ -262,7 +238,7 @@ export default function SolarDashboard() {
             title="Interplanetary Magnetic Field"
             loading={mag.loading}
             error={mag.error}
-            onRefresh={fetchMag}
+            onRefresh={refreshAll}
           />
           {mag.error && (
             <div className="solar-error">
@@ -273,25 +249,25 @@ export default function SolarDashboard() {
             <div className="solar-data-grid">
               <div className="solar-metric">
                 <span className="solar-label">Bz</span>
-                <span className={`solar-value ${parseFloat(mag.data.bz) < 0 ? 'red' : 'green'}`}>
-                  {parseFloat(mag.data.bz).toFixed(2)} <small>nT</small>
+                <span className={`solar-value ${mag.data.bz < 0 ? 'red' : 'green'}`}>
+                  {mag.data.bz.toFixed(2)} <small>nT</small>
                 </span>
               </div>
               <div className="solar-metric">
                 <span className="solar-label">Bt</span>
-                <span className="solar-value cyan">{parseFloat(mag.data.bt).toFixed(2)} <small>nT</small></span>
+                <span className="solar-value cyan">{mag.data.bt.toFixed(2)} <small>nT</small></span>
               </div>
               <div className="solar-metric">
                 <span className="solar-label">Bx</span>
-                <span className="solar-value cyan">{parseFloat(mag.data.bx).toFixed(2)} <small>nT</small></span>
+                <span className="solar-value cyan">{mag.data.bx.toFixed(2)} <small>nT</small></span>
               </div>
               <div className="solar-metric">
                 <span className="solar-label">By</span>
-                <span className="solar-value cyan">{parseFloat(mag.data.by).toFixed(2)} <small>nT</small></span>
+                <span className="solar-value cyan">{mag.data.by.toFixed(2)} <small>nT</small></span>
               </div>
               <div className="solar-metric full">
                 <span className="solar-label">Updated</span>
-                <span className="solar-value-small">{mag.data.time} UTC</span>
+                <span className="solar-value-small">{mag.data.time} UTC · {mag.data.source}</span>
               </div>
             </div>
           )}
@@ -307,7 +283,7 @@ export default function SolarDashboard() {
             title="Planetary Kp Index"
             loading={kp.loading}
             error={kp.error}
-            onRefresh={fetchKp}
+            onRefresh={refreshAll}
           />
           {kp.error && (
             <div className="solar-error">
@@ -336,6 +312,9 @@ export default function SolarDashboard() {
             <p className="solar-hint">Awaiting fetch…</p>
           )}
         </div>
+
+        {/* ── Heliosphere ──────────────────────────────────────────────────── */}
+        <HeliospherePanel />
 
         {/* ── Local Magnetometer ───────────────────────────────────────────── */}
         <div className="solar-panel">
@@ -434,10 +413,10 @@ export default function SolarDashboard() {
             <div className="solar-embed-empty">
               <div className="solar-embed-empty-content">
                 <strong>Solar Radio stream not configured.</strong>
-                <span>Set VITE_SOLAR_RADIO_URL to a public embeddable YouTube URL to show the live panel here.</span>
+                <span>Set VITE_SOLAR_RADIO_URL to a public embeddable stream URL to show the live panel here. Meanwhile, NASA's Radio JOVE project publishes live solar radio observations.</span>
               </div>
-              <a href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer" className="solar-embed-link">
-                Open YouTube
+              <a href="https://radiojove.gsfc.nasa.gov/" target="_blank" rel="noopener noreferrer" className="solar-embed-link">
+                NASA Radio JOVE
               </a>
             </div>
           )}
@@ -462,6 +441,7 @@ export default function SolarDashboard() {
               ['SpaceWeatherLive Dashboards',     'https://www.spaceweatherlive.com/en/solar-activity.html'],
               ['NOAA DSCOVR L1 Data',             'https://www.ngdc.noaa.gov/dscovr/'],
               ['Helioviewer (solar imaging)',     'https://helioviewer.org/'],
+              ['NASA Helioviewer (heliosphere)',  'https://gs671-suske.ndc.nasa.gov/'],
             ].map(([label, href]) => (
               <li key={href}>
                 <a href={href} target="_blank" rel="noopener noreferrer">
